@@ -9,7 +9,7 @@ export function StoryCard({ story, onOpen }: { story: Story; onOpen: () => void 
 
   return (
     <article className="flex flex-col overflow-hidden rounded-lg border border-stone-200 bg-white transition-shadow hover:shadow-md">
-      <button type="button" onClick={onOpen} className="flex flex-1 flex-col text-left">
+      <button type="button" onClick={onOpen} className="flex flex-1 cursor-pointer flex-col text-left">
         {story.image_url ? (
           // eslint-disable-next-line @next/next/no-img-element -- images come from arbitrary outlet domains decided at runtime, unsuitable for next/image's static remotePatterns allowlist
           <img

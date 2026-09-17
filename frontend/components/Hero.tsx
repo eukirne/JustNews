@@ -9,7 +9,7 @@ export function Hero({ story, onOpen }: { story: Story; onOpen: () => void }) {
 
   return (
     <article className="grid grid-cols-1 gap-6 border-b border-stone-200 pb-8 md:grid-cols-2 md:gap-10">
-      <button type="button" onClick={onOpen} className="text-left">
+      <button type="button" onClick={onOpen} className="cursor-pointer text-left">
         {story.image_url ? (
           // eslint-disable-next-line @next/next/no-img-element -- arbitrary outlet-hosted image, see StoryCard
           <img
@@ -24,7 +24,7 @@ export function Hero({ story, onOpen }: { story: Story; onOpen: () => void }) {
 
       <div className="flex flex-col justify-center gap-3">
         <CategoryTag category={story.category} />
-        <button type="button" onClick={onOpen} className="text-left">
+        <button type="button" onClick={onOpen} className="cursor-pointer text-left">
           <h1 className="font-serif text-3xl font-bold leading-tight text-stone-900 md:text-4xl">{story.headline}</h1>
         </button>
 
