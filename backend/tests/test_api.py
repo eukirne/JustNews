@@ -67,3 +67,49 @@ def test_list_and_get_story(tmp_path):
     resp = client.get("/api/categories")
     assert resp.status_code == 200
     assert "World" in resp.json()
+
+
+def test_sports_hidden_from_default_listing_but_visible_via_filter(tmp_path):
+    app, TestSession = make_app_with_test_db(tmp_path)
+
+    session = TestSession()
+    session.add_all(
+        [
+            Story(
+                cluster_key="world-1",
+                category="World",
+                headline="World story",
+                original_headline="World story original",
+                summary="summary",
+                image_url=None,
+                sources_json=json.dumps([{"outlet": "BBC News", "url": "https://bbc.co.uk/w", "title": "t"}]),
+                published_at=dt.datetime.now(dt.timezone.utc),
+            ),
+            Story(
+                cluster_key="sports-1",
+                category="Sports",
+                headline="Sports story",
+                original_headline="Sports story original",
+                summary="summary",
+                image_url=None,
+                sources_json=json.dumps([{"outlet": "BBC Sport", "url": "https://bbc.co.uk/s", "title": "t"}]),
+                published_at=dt.datetime.now(dt.timezone.utc),
+            ),
+        ]
+    )
+    session.commit()
+    session.close()
+
+    client = TestClient(app)
+
+    resp = client.get("/api/stories")
+    assert resp.status_code == 200
+    categories = [s["category"] for s in resp.json()]
+    assert "Sports" not in categories
+    assert "World" in categories
+
+    resp = client.get("/api/stories?category=Sports")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert len(body) == 1
+    assert body[0]["headline"] == "Sports story"

@@ -51,6 +51,21 @@ to vibes:
 - Headlines are one-line and factual: no ALL CAPS, no clickbait, no
   manufactured urgency.
 - Every story keeps 2–3 original source links for attribution.
+- Routine local crime, individual accident reports, and other local-incident
+  stories (a single arrest, an inquest into one person's death, a local
+  crash, a tribute/obituary piece) are excluded from publication entirely —
+  Claude flags these via an `exclude` field on the same reframe call rather
+  than a keyword filter, since telling "routine local crime" apart from
+  genuinely significant news that happens to involve a crime (a war-crimes
+  investigation, a major public-interest trial) takes real judgment. Because
+  some reframe calls are "spent" on stories that then get discarded, the
+  pipeline oversamples candidate clusters and caps total Claude calls per
+  run at `STORIES_PER_REFRESH × 2` (see `pipeline.py`) so a crime-heavy news
+  day doesn't blow past the usual per-run cost.
+- Sports is a real category with its own feeds, but is hidden from the
+  default front-page listing — it only shows up when its tab is selected
+  (`/api/stories?category=Sports`; see `DEFAULT_HIDDEN_CATEGORIES` in
+  `api.py`).
 
 ## A note on sources
 

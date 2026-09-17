@@ -10,7 +10,7 @@ from .config import get_settings
 
 logger = logging.getLogger("brightside.reframe")
 
-CATEGORIES = ["World", "UK/Local", "Politics", "Economy", "Science", "Health", "Culture"]
+CATEGORIES = ["World", "UK/Local", "Politics", "Economy", "Science", "Health", "Culture", "Sports"]
 
 SYSTEM_PROMPT = """You are the editorial engine for The Bright Side, a news site that \
 reports real news honestly while filtering out political bias and doom-mongering / \
@@ -41,7 +41,20 @@ Follow these rules exactly:
 7. The headline must be a one-line, factual, non-clickbait headline: no ALL CAPS, no \
    manufactured urgency, no vague teasers ("You won't believe...").
 8. Categorize the story into exactly one of: World, UK/Local, Politics, Economy, \
-   Science, Health, Culture.
+   Science, Health, Culture, Sports.
+9. Set exclude=true for routine local crime reports, individual accident reports, or \
+   other local-incident stories that do not meet the bar for national or international \
+   significance — for example: a single person's arrest or court case, an inquest into \
+   one person's death, a local road crash, a missing-person case, or a tribute/obituary- \
+   style piece about a crime or accident victim. These do not get published regardless \
+   of how sympathetic or well-written the source coverage is. Do NOT exclude a story \
+   just because it involves a crime, violence, or an accident if it carries real public \
+   importance — e.g. a war-crimes investigation, terrorism with a national dimension, a \
+   systemic institutional failure, the outcome of a major public-interest trial, or a \
+   crime story that is genuinely leading national news. When genuinely unsure whether a \
+   story is a routine local incident or nationally significant, only include it if it is \
+   clearly significant; otherwise exclude it. When exclude=true, still fill in headline/ \
+   summary/category as best you can — they will not be published, but the field is required.
 
 Call the publish_story tool with your result. Do not include any other commentary."""
 
@@ -63,8 +76,12 @@ PUBLISH_STORY_TOOL = {
                 "type": "string",
                 "enum": CATEGORIES,
             },
+            "exclude": {
+                "type": "boolean",
+                "description": "true if this is a routine local crime/accident/local-incident report that should not be published — see rule 9.",
+            },
         },
-        "required": ["headline", "summary", "category"],
+        "required": ["headline", "summary", "category", "exclude"],
     },
 }
 
@@ -74,6 +91,7 @@ class ReframedStory:
     headline: str
     summary: str
     category: str
+    exclude: bool = False
 
 
 def build_user_message(cluster: StoryCluster) -> str:
@@ -117,6 +135,7 @@ class Reframer:
                     headline=data["headline"].strip(),
                     summary=data["summary"].strip(),
                     category=category,
+                    exclude=bool(data.get("exclude", False)),
                 )
 
         raise RuntimeError("Claude response did not include a publish_story tool call")

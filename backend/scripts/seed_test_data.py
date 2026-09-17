@@ -110,6 +110,23 @@ STORIES = [
         ],
         published_at=dt.datetime.now(dt.timezone.utc) - dt.timedelta(hours=10),
     ),
+    dict(
+        cluster_key="seed-6",
+        category="Sports",
+        headline="Underdog club secures first league title in 30 years",
+        original_headline="Minnows stun league favourites to clinch historic title",
+        summary=(
+            "A club that narrowly avoided relegation two seasons ago has won its first league "
+            "title in three decades, finishing four points clear after a run of 12 wins in its "
+            "final 14 matches. The squad was assembled on one of the division's smallest budgets."
+        ),
+        image_url=None,
+        sources=[
+            {"outlet": "BBC Sport", "url": "https://example.com/bbc/title-win", "title": "Historic title win"},
+            {"outlet": "The Guardian Sport", "url": "https://example.com/guardian/title-win", "title": "Underdogs champions"},
+        ],
+        published_at=dt.datetime.now(dt.timezone.utc) - dt.timedelta(hours=3),
+    ),
 ]
 
 

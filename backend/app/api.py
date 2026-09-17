@@ -13,6 +13,10 @@ from .schemas import SourceLink, StoryOut
 
 router = APIRouter()
 
+# Sports only shows up under its own category tab, never mixed into the
+# default front-page listing.
+DEFAULT_HIDDEN_CATEGORIES = {"Sports"}
+
 
 def _to_story_out(story: Story) -> StoryOut:
     sources = [SourceLink(**s) for s in json.loads(story.sources_json)]
@@ -38,6 +42,8 @@ def list_stories(
     stmt = select(Story).order_by(Story.published_at.desc()).limit(limit)
     if category:
         stmt = stmt.where(Story.category == category)
+    else:
+        stmt = stmt.where(Story.category.notin_(DEFAULT_HIDDEN_CATEGORIES))
     stories = db.execute(stmt).scalars().all()
     return [_to_story_out(s) for s in stories]
 

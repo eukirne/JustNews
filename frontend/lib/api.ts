@@ -21,6 +21,9 @@ export type Story = {
 // otherwise produces a double slash and a 404, e.g. "https://host//api/stories").
 export const API_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000").replace(/\/+$/, "");
 
+// "All" (no category selected) never includes Sports — it only shows up
+// under its own tab. Keep this in sync with DEFAULT_HIDDEN_CATEGORIES in
+// the backend's api.py.
 export const CATEGORIES = [
   "World",
   "UK/Local",
@@ -29,6 +32,7 @@ export const CATEGORIES = [
   "Science",
   "Health",
   "Culture",
+  "Sports",
 ] as const;
 
 export async function fetcher<T>(path: string): Promise<T> {

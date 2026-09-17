@@ -70,6 +70,8 @@ FEEDS: list[Feed] = [
     Feed(name="NPR World", url="https://feeds.npr.org/1004/rss.xml", category_hint="World"),
     Feed(name="NPR Health", url="https://feeds.npr.org/1128/rss.xml", category_hint="Health"),
     Feed(name="NPR Science", url="https://feeds.npr.org/1007/rss.xml", category_hint="Science"),
+    Feed(name="BBC Sport", url="http://feeds.bbci.co.uk/sport/rss.xml", category_hint="Sports"),
+    Feed(name="The Guardian Sport", url="https://www.theguardian.com/uk/sport/rss", category_hint="Sports"),
     # Best-effort / likely defunct public feeds — kept so the fetcher can
     # confirm (or you can update) their status without a code change elsewhere.
     Feed(name="Reuters Top News", url="https://www.reuters.com/rssFeed/topNews", category_hint="World"),

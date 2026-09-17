@@ -6,6 +6,7 @@ const CATEGORY_COLORS: Record<string, string> = {
   Science: "bg-emerald-50 text-emerald-800",
   Health: "bg-rose-50 text-rose-800",
   Culture: "bg-purple-50 text-purple-800",
+  Sports: "bg-teal-50 text-teal-800",
 };
 
 export function CategoryTag({ category }: { category: string }) {
