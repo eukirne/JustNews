@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:media="http://search.yahoo.com/mrss/">
+  <channel>
+    <title>Sample News Feed</title>
+    <link>https://example.com</link>
+    <description>Test feed</description>
+    <item>
+      <title>City opens new flood defences after last year's storm damage</title>
+      <link>https://example.com/articles/flood-defences</link>
+      <description>Local authorities have completed a flood barrier project following storm damage last winter.</description>
+      <pubDate>Mon, 15 Sep 2026 09:00:00 GMT</pubDate>
+      <guid>https://example.com/articles/flood-defences</guid>
+      <media:content url="https://example.com/images/flood-defences.jpg" medium="image" />
+    </item>
+    <item>
+      <title>Regional trade talks continue into second week</title>
+      <link>https://example.com/articles/trade-talks</link>
+      <description>Negotiators from both sides report progress on a handful of outstanding issues.</description>
+      <pubDate>Mon, 15 Sep 2026 07:30:00 GMT</pubDate>
+      <guid>https://example.com/articles/trade-talks</guid>
+    </item>
+  </channel>
+</rss>
