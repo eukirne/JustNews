@@ -159,6 +159,60 @@ Swap `DATABASE_URL` to a `postgresql+psycopg2://...` URL and add
 `psycopg2-binary` to `requirements.txt` to move off SQLite for a real
 deployment.
 
+### Deploying to Render (step-by-step)
+
+Both Dockerfiles already read the `$PORT` Render assigns, so no extra
+config is needed beyond environment variables. Create **two** web
+services from the same GitHub repo:
+
+**1. Backend**
+
+- Render dashboard → New → Web Service → connect the `JustNews` repo.
+- Root Directory: `backend`. Runtime: Docker (auto-detected from
+  `backend/Dockerfile`).
+- Health Check Path: `/health`.
+- Plan: pick **Starter** (not Free) and attach a **Disk** (1 GB is plenty,
+  mount path `/data`). This matters: Render's free web services sleep
+  after 15 minutes of inactivity (which kills the in-process scheduler)
+  and don't support persistent disks at all, so on Free your SQLite data
+  — and the "auto-updating every 30-60 min" behavior — won't actually
+  persist or run continuously. Starter is a few dollars a month and fixes
+  both.
+- Environment variables:
+  - `ANTHROPIC_API_KEY` — your key from console.anthropic.com (get one at
+    https://console.anthropic.com/settings/keys if you don't have it yet
+    — you can deploy without it, the pipeline just won't produce any
+    stories until it's set).
+  - `CLAUDE_MODEL` — `claude-sonnet-5` (or leave unset to use that default).
+  - `DATABASE_URL` — `sqlite:////data/brightside.db`.
+  - `STORIES_PER_REFRESH` — `15`.
+  - `REFRESH_INTERVAL_MINUTES` — `45`.
+  - `CORS_ORIGINS` — leave as `http://localhost:3000` for now; you'll
+    update this once the frontend has a URL (step 3 below).
+- Deploy, then copy the resulting URL (`https://<something>.onrender.com`).
+
+**2. Frontend**
+
+- New → Web Service → same repo, Root Directory: `frontend`, Docker
+  runtime (from `frontend/Dockerfile`).
+- Plan: Free is fine here — it can cold-start on a visit without losing
+  any data, unlike the backend.
+- Environment variables:
+  - `NEXT_PUBLIC_API_URL` — the backend URL from step 1. This is read at
+    **build time** (it's baked into the client bundle), so if you change
+    it later you need to trigger a new deploy, not just a restart.
+- Deploy, then copy this URL too.
+
+**3. Wire them together**
+
+- Back on the backend service, update `CORS_ORIGINS` to the frontend's
+  URL from step 2, then redeploy the backend (env var changes need a
+  redeploy to take effect).
+- Visit the frontend URL — you should see stories once the first
+  scheduled pipeline run completes (up to `REFRESH_INTERVAL_MINUTES`
+  after the backend's first boot, which also kicks one off immediately
+  at startup).
+
 ## Frontend features
 
 - Editorial layout: hero story + responsive card grid, mobile-friendly.
