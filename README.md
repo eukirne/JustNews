@@ -66,6 +66,12 @@ to vibes:
   default front-page listing — it only shows up when its tab is selected
   (`/api/stories?category=Sports`; see `DEFAULT_HIDDEN_CATEGORIES` in
   `api.py`).
+- Stories with no usable image (no feed-supplied one, and no og:image
+  fallback either) are dropped before they'd cost a reframe call
+  (`gather_top_clusters` in `pipeline.py`), and the API additionally
+  excludes any image-less row from `/api/stories` — so an image is
+  guaranteed for everything the site actually shows, whether the story was
+  just published or has been sitting in the database for a while.
 
 ## A note on sources
 

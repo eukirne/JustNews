@@ -12,7 +12,7 @@ from app.models import Base
 from app.reframe import ReframedStory
 
 
-def make_cluster(title: str, hours_offset: int = 0) -> StoryCluster:
+def make_cluster(title: str, hours_offset: int = 0, image_url: str | None = None) -> StoryCluster:
     article = RawArticle(
         outlet="BBC News",
         title=title,
@@ -20,6 +20,7 @@ def make_cluster(title: str, hours_offset: int = 0) -> StoryCluster:
         feed_summary="summary text",
         published_at=dt.datetime(2026, 9, 15, 12, tzinfo=dt.timezone.utc) + dt.timedelta(hours=hours_offset),
         category_hint="World",
+        image_url=image_url,
     )
     return StoryCluster(primary=article, members=[])
 
@@ -101,3 +102,30 @@ async def test_run_pipeline_stops_once_limit_reached(tmp_path, monkeypatch):
 
     assert len(saved) == 2
     assert reframer.calls == 2  # never touched the remaining 3 clusters
+
+
+async def test_gather_top_clusters_drops_stories_with_no_image(monkeypatch):
+    clusters = [
+        make_cluster("Has image", hours_offset=0, image_url="https://example.com/a.jpg"),
+        make_cluster("No image", hours_offset=1, image_url=None),
+        make_cluster("Also has image", hours_offset=2, image_url="https://example.com/b.jpg"),
+    ]
+
+    async def fake_fetch_all_feeds(feeds):
+        return []
+
+    def fake_cluster_articles(articles):
+        return clusters
+
+    async def fake_fill_missing_images(client, articles):
+        # Simulate the og:image fallback failing to find anything for the
+        # one article that has no feed-supplied image — it stays None.
+        return None
+
+    monkeypatch.setattr(pipeline, "fetch_all_feeds", fake_fetch_all_feeds)
+    monkeypatch.setattr(pipeline, "cluster_articles", fake_cluster_articles)
+    monkeypatch.setattr(pipeline, "fill_missing_images", fake_fill_missing_images)
+
+    result = await pipeline.gather_top_clusters(limit=5)
+
+    assert [c.primary.title for c in result] == ["Has image", "Also has image"]

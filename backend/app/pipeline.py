@@ -55,7 +55,16 @@ async def gather_top_clusters(limit: int, pool_multiplier: int = POOL_MULTIPLIER
     async with httpx.AsyncClient(headers={"User-Agent": settings.fetch_user_agent}) as client:
         await fill_missing_images(client, [c.primary for c in top])
 
-    return top
+    # Stories with no image (no feed-supplied one, and no usable og:image
+    # either) are dropped before they'd otherwise cost a reframe call —
+    # same reasoning as the crime/local-incident filter: free to check now,
+    # wasteful to pay to reframe first and discard after.
+    with_images = [c for c in top if c.primary.image_url]
+    dropped = len(top) - len(with_images)
+    if dropped:
+        logger.info("Dropping %d candidate stories with no usable image", dropped)
+
+    return with_images
 
 
 async def run_pipeline(db: Session, limit: int | None = None, reframer: Reframer | None = None) -> list[Story]:

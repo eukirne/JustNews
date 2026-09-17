@@ -81,7 +81,7 @@ def test_sports_hidden_from_default_listing_but_visible_via_filter(tmp_path):
                 headline="World story",
                 original_headline="World story original",
                 summary="summary",
-                image_url=None,
+                image_url="https://example.com/world.jpg",
                 sources_json=json.dumps([{"outlet": "BBC News", "url": "https://bbc.co.uk/w", "title": "t"}]),
                 published_at=dt.datetime.now(dt.timezone.utc),
             ),
@@ -91,7 +91,7 @@ def test_sports_hidden_from_default_listing_but_visible_via_filter(tmp_path):
                 headline="Sports story",
                 original_headline="Sports story original",
                 summary="summary",
-                image_url=None,
+                image_url="https://example.com/sports.jpg",
                 sources_json=json.dumps([{"outlet": "BBC Sport", "url": "https://bbc.co.uk/s", "title": "t"}]),
                 published_at=dt.datetime.now(dt.timezone.utc),
             ),
@@ -113,3 +113,42 @@ def test_sports_hidden_from_default_listing_but_visible_via_filter(tmp_path):
     body = resp.json()
     assert len(body) == 1
     assert body[0]["headline"] == "Sports story"
+
+
+def test_stories_without_an_image_are_excluded(tmp_path):
+    app, TestSession = make_app_with_test_db(tmp_path)
+
+    session = TestSession()
+    session.add_all(
+        [
+            Story(
+                cluster_key="with-image",
+                category="World",
+                headline="Has an image",
+                original_headline="original",
+                summary="summary",
+                image_url="https://example.com/has-image.jpg",
+                sources_json=json.dumps([{"outlet": "BBC News", "url": "https://bbc.co.uk/x", "title": "t"}]),
+                published_at=dt.datetime.now(dt.timezone.utc),
+            ),
+            Story(
+                cluster_key="no-image",
+                category="World",
+                headline="Has no image",
+                original_headline="original",
+                summary="summary",
+                image_url=None,
+                sources_json=json.dumps([{"outlet": "BBC News", "url": "https://bbc.co.uk/y", "title": "t"}]),
+                published_at=dt.datetime.now(dt.timezone.utc),
+            ),
+        ]
+    )
+    session.commit()
+    session.close()
+
+    client = TestClient(app)
+
+    resp = client.get("/api/stories")
+    assert resp.status_code == 200
+    headlines = [s["headline"] for s in resp.json()]
+    assert headlines == ["Has an image"]

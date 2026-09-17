@@ -39,7 +39,7 @@ def list_stories(
     limit: int = Query(default=50, le=100),
     db: Session = Depends(get_db),
 ):
-    stmt = select(Story).order_by(Story.published_at.desc()).limit(limit)
+    stmt = select(Story).where(Story.image_url.is_not(None)).order_by(Story.published_at.desc()).limit(limit)
     if category:
         stmt = stmt.where(Story.category == category)
     else:
