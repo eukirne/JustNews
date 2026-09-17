@@ -37,3 +37,48 @@ def test_parse_feed_skips_entries_without_title_or_link():
 
     articles = parse_feed(feed, broken_xml)
     assert articles == []
+
+
+def test_parse_feed_picks_widest_of_several_media_sizes():
+    feed = Feed(name="Sample", url="https://example.com/rss.xml")
+    xml = b"""<?xml version="1.0" encoding="UTF-8"?>
+    <rss version="2.0" xmlns:media="http://search.yahoo.com/mrss/">
+      <channel>
+        <item>
+          <title>Multi-size image article</title>
+          <link>https://example.com/articles/multi-size</link>
+          <description>desc</description>
+          <guid>https://example.com/articles/multi-size</guid>
+          <media:content url="https://example.com/images/small.jpg" width="140" />
+          <media:content url="https://example.com/images/large.jpg" width="1000" />
+          <media:content url="https://example.com/images/medium.jpg" width="460" />
+        </item>
+      </channel>
+    </rss>"""
+
+    articles = parse_feed(feed, xml)
+    assert len(articles) == 1
+    assert articles[0].image_url == "https://example.com/images/large.jpg"
+
+
+def test_parse_feed_rejects_undersized_thumbnail_only():
+    feed = Feed(name="BBC News", url="https://example.com/rss.xml")
+    xml = b"""<?xml version="1.0" encoding="UTF-8"?>
+    <rss version="2.0" xmlns:media="http://search.yahoo.com/mrss/">
+      <channel>
+        <item>
+          <title>Tiny thumbnail only article</title>
+          <link>https://example.com/articles/tiny-thumb</link>
+          <description>desc</description>
+          <guid>https://example.com/articles/tiny-thumb</guid>
+          <media:thumbnail url="https://example.com/images/tiny.jpg" width="144" height="81" />
+        </item>
+      </channel>
+    </rss>"""
+
+    articles = parse_feed(feed, xml)
+    assert len(articles) == 1
+    # 144px is below MIN_FEED_IMAGE_WIDTH and there's no larger candidate or
+    # enclosure fallback, so no image is published from the feed alone —
+    # the og:image fallback in images.py is expected to fill it in instead.
+    assert articles[0].image_url is None

@@ -13,6 +13,14 @@ from .config import Feed, get_settings
 
 logger = logging.getLogger("brightside.feeds")
 
+# Below this width (px), a feed-supplied thumbnail is treated as unusable
+# rather than published as-is — BBC's RSS, for example, only ever supplies
+# a single 144x81 media:thumbnail, which looks visibly blurry stretched to
+# fill a card. When every candidate is this small (or none declare a
+# width), we return None here so the og:image fallback in images.py fetches
+# the article's actual hero image instead.
+MIN_FEED_IMAGE_WIDTH = 400
+
 
 def _entry_published_at(entry) -> dt.datetime:
     for key in ("published_parsed", "updated_parsed"):
@@ -23,13 +31,28 @@ def _entry_published_at(entry) -> dt.datetime:
 
 
 def _entry_image(entry) -> str | None:
-    # media:content / media:thumbnail (feedparser exposes both the same way)
+    # media:content / media:thumbnail (feedparser exposes both the same way).
+    # A feed may list several sizes of the same image (Guardian commonly
+    # does); collect every candidate and pick the widest rather than
+    # whichever happens to come first.
+    candidates: list[tuple[int, str]] = []
     for key in ("media_content", "media_thumbnail"):
-        items = entry.get(key) or []
-        for item in items:
+        for item in entry.get(key) or []:
             url = item.get("url")
-            if url:
-                return url
+            if not url:
+                continue
+            try:
+                width = int(item.get("width") or 0)
+            except (TypeError, ValueError):
+                width = 0
+            candidates.append((width, url))
+
+    if candidates:
+        best_width, best_url = max(candidates, key=lambda c: c[0])
+        # width == 0 means no size was declared at all — accept it, since
+        # we have no basis to reject it (e.g. NPR's media:content).
+        if best_width == 0 or best_width >= MIN_FEED_IMAGE_WIDTH:
+            return best_url
 
     # <enclosure> pointing at an image
     for enc in entry.get("enclosures") or []:
