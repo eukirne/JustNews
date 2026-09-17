@@ -16,7 +16,10 @@ export type Story = {
   updated_at: string;
 };
 
-export const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+// Trailing slash stripped so callers can safely do `${API_URL}${path}` even if
+// NEXT_PUBLIC_API_URL was entered with one (a common copy-paste mistake that
+// otherwise produces a double slash and a 404, e.g. "https://host//api/stories").
+export const API_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000").replace(/\/+$/, "");
 
 export const CATEGORIES = [
   "World",
