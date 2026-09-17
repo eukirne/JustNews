@@ -5,11 +5,14 @@ import { CategoryFilter } from "@/components/CategoryFilter";
 import { Hero } from "@/components/Hero";
 import { SiteHeader } from "@/components/SiteHeader";
 import { StoryCard } from "@/components/StoryCard";
+import { StoryModal } from "@/components/StoryModal";
+import { Story } from "@/lib/api";
 import { useStories } from "@/lib/useStories";
 
 export default function Home() {
   const [category, setCategory] = useState<string | null>(null);
   const { stories, isLoading, error, lastUpdated } = useStories(category);
+  const [openStory, setOpenStory] = useState<Story | null>(null);
 
   const [hero, ...rest] = stories;
 
@@ -34,12 +37,12 @@ export default function Home() {
           <p className="text-sm text-stone-500">No stories yet for this category. Check back after the next refresh.</p>
         )}
 
-        {hero && <Hero story={hero} />}
+        {hero && <Hero story={hero} onOpen={() => setOpenStory(hero)} />}
 
         {rest.length > 0 && (
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {rest.map((story) => (
-              <StoryCard key={story.id} story={story} />
+              <StoryCard key={story.id} story={story} onOpen={() => setOpenStory(story)} />
             ))}
           </div>
         )}
@@ -49,6 +52,8 @@ export default function Home() {
         Stories are AI-reframed summaries of reporting from BBC, The Guardian, NPR, and other outlets. Always
         linked back to the original for full detail.
       </footer>
+
+      {openStory && <StoryModal story={openStory} onClose={() => setOpenStory(null)} />}
     </div>
   );
 }
