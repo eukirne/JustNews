@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from functools import lru_cache
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -18,6 +19,21 @@ class Settings(BaseSettings):
     claude_model: str = "claude-sonnet-5"
 
     database_url: str = "sqlite:///./brightside.db"
+
+    @field_validator("claude_model")
+    @classmethod
+    def _claude_model_looks_like_a_model_id(cls, v: str) -> str:
+        # Catches the easy-to-make mistake of pasting DATABASE_URL's value
+        # (or any other connection string) into CLAUDE_MODEL by accident —
+        # fail loudly at startup instead of silently 404-ing on every
+        # single reframe call with a confusing "model: sqlite:///..." error.
+        if "://" in v:
+            raise ValueError(
+                f"CLAUDE_MODEL is set to {v!r}, which looks like a URL/connection "
+                "string, not a model ID (e.g. 'claude-sonnet-5'). Check for a "
+                "copy-paste mix-up with DATABASE_URL in your environment variables."
+            )
+        return v
 
     stories_per_refresh: int = 15
     refresh_interval_minutes: int = 45
