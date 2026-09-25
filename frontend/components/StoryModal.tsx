@@ -52,7 +52,7 @@ export function StoryModal({ story, onClose }: { story: Story; onClose: () => vo
               type="button"
               onClick={onClose}
               aria-label="Close"
-              className="shrink-0 rounded-full p-1.5 text-stone-400 hover:bg-stone-100 hover:text-stone-700"
+              className="shrink-0 cursor-pointer rounded-full p-1.5 text-stone-400 hover:bg-stone-100 hover:text-stone-700"
             >
               <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2">
                 <line x1="4" y1="4" x2="16" y2="16" />

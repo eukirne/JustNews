@@ -20,7 +20,7 @@ export function CategoryFilter({
           <button
             key={category ?? "all"}
             onClick={() => onChange(category)}
-            className={`shrink-0 whitespace-nowrap border-b-2 py-3 text-sm font-bold uppercase tracking-wide transition-colors ${
+            className={`shrink-0 cursor-pointer whitespace-nowrap border-b-2 py-3 text-sm font-bold uppercase tracking-wide transition-colors ${
               isActive
                 ? "border-accent text-foreground"
                 : "border-transparent text-stone-400 hover:text-stone-700"
