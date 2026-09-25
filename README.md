@@ -59,8 +59,17 @@ to vibes:
   call rather than a keyword filter, since telling "this is really just one
   person's story" apart from genuinely general-interest news that happens
   to name or quote an individual (a war-crimes investigation, a major
-  public-interest trial, a policy change) takes real judgment. Because some
-  reframe calls are "spent" on stories that then get discarded, the
+  public-interest trial, a policy change) takes real judgment. This
+  specifically covers a trap that leaked through early on: an official or
+  advocate (e.g. a victims' commissioner) criticizing a single case's
+  outcome — "[official] says the bail decision in [one person's] case was
+  a failure" — is still a single-case crime/court story; the critical
+  quote alone doesn't make it systemic. The institutional-failure carve-out
+  only applies when the failure itself is the substance and is backed by
+  something genuinely systemic (a formal inquiry/review, a pattern across
+  many cases, a resulting policy change) — not one person's reaction to one
+  case. Because some reframe calls are "spent" on stories that then get
+  discarded, the
   pipeline oversamples candidate clusters and caps total Claude calls per
   run at `STORIES_PER_REFRESH × 2` (see `pipeline.py`) so a day heavy on
   this kind of story doesn't blow past the usual per-run cost.
@@ -80,7 +89,12 @@ to vibes:
 - Sports is a real category with its own feeds, but is hidden from the
   default front-page listing — it only shows up when its tab is selected
   (`/api/stories?category=Sports`; see `DEFAULT_HIDDEN_CATEGORIES` in
-  `api.py`).
+  `api.py`). This only works if categorization is reliable, so rule 8 is
+  explicit that any sports content — including a manager's or player's
+  personal press-conference quotes or reaction ("[Manager] says he
+  regrets...") — is always tagged Sports regardless of how personally the
+  story is framed; a miscategorized sports story is exactly what leaks
+  onto the front page despite this rule.
 - Stories with no usable image are published anyway, text-only — a story
   is never dropped just for lacking a photo. `choose_best_image`
   (`backend/app/images.py`) checks every candidate image for a story (the

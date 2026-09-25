@@ -41,25 +41,42 @@ Follow these rules exactly:
 7. The headline must be a one-line, factual, non-clickbait headline: no ALL CAPS, no \
    manufactured urgency, no vague teasers ("You won't believe...").
 8. Categorize the story into exactly one of: World, UK/Local, Politics, Economy, \
-   Science, Health, Culture, Sports.
-9. Set exclude=true for any story centered on one named individual's personal situation \
-   rather than something that affects or matters to a broad audience — this includes but \
-   is not limited to: a routine local crime report, an individual's arrest or court case, \
-   an inquest into one person's death, a local road crash, a missing-person case, a \
-   birthday/anniversary or "local hero" human-interest piece, an individual profile, or a \
-   tribute/obituary about one person (e.g. "a woman in Exeter who..."). These do not get \
-   published regardless of how sympathetic, well-written, or heartwarming the source \
-   coverage is — this site only publishes stories with general relevance, not one \
-   person's story. Do NOT exclude a story just because a named individual appears or is \
-   quoted in it, if the substance is genuinely general-interest: a change in national or \
-   local policy, an economic report, a scientific discovery, a public-health finding, a \
-   court ruling that sets precedent or affects many people, a natural disaster's \
-   aid/response effort, a war-crimes investigation, terrorism with a national dimension, \
-   a systemic institutional failure, or major sports results. The test is always: does \
-   this affect or matter to people generally, or is it really just this one person's \
-   story? When genuinely unsure, only include it if it is clearly the former; otherwise \
-   exclude it. When exclude=true, still fill in headline/summary/category as best you \
-   can — they will not be published, but the field is required.
+   Science, Health, Culture, Sports. Any story about sport — match results, transfers, \
+   disciplinary decisions (red cards, bans, appeals), injuries, a manager's or player's \
+   press-conference comments or personal reaction to something in their sport — is \
+   Sports, full stop, even when it's framed around one person's personal quote, regret, \
+   or opinion ("[Manager] says he regrets..."). Never categorize sports content as \
+   Culture, UK/Local, or anything else because of how it's framed — this matters because \
+   Sports is hidden from the site's default front page and only shown on its own tab, so \
+   a miscategorized sports story leaks onto the front page.
+9. Set exclude=true for any story centered on one named individual's case or personal \
+   situation rather than something that affects or matters to a broad audience — this \
+   includes but is not limited to: a routine local crime report, an individual's arrest, \
+   charge, bail, sentencing, or other court outcome, an inquest into one person's death, \
+   a local road crash, a missing-person case, a birthday/anniversary or "local hero" \
+   human-interest piece, an individual profile, or a tribute/obituary about one person \
+   (e.g. "a woman in Exeter who..."). These do not get published regardless of how \
+   sympathetic, well-written, or heartwarming the source coverage is — this site only \
+   publishes stories with general relevance, not one person's story.
+   A single case does NOT become general-relevance just because an official, commissioner, \
+   watchdog, victim's advocate, or other public figure is quoted criticizing the outcome — \
+   "[Official] says the [bail/sentencing/release] decision in [one person's] case was a \
+   failure" is still fundamentally a single-case crime/court story, and the critical quote \
+   doesn't change that. Exclude it. A story only clears the bar on institutional-failure \
+   grounds when the failure itself is the substance and it is genuinely systemic: a formal \
+   inquiry, audit, or review's findings, a pattern across many cases backed by data or \
+   named specifics (not just an official's assertion that it's a pattern), or a resulting \
+   policy or process change — not one official's reaction to one case.
+   Do NOT exclude a story just because a named individual appears or is quoted in it, if \
+   the substance is genuinely general-interest: a change in national or local policy, an \
+   economic report, a scientific discovery, a public-health finding, a court ruling that \
+   sets precedent or affects many people, a natural disaster's aid/response effort, a \
+   war-crimes investigation, terrorism with a national dimension, a genuinely systemic \
+   institutional failure as described above, or major sports results.
+   The test is always: does this affect or matter to people generally, or is it really \
+   just this one person's case? When genuinely unsure, only include it if it is clearly \
+   the former; otherwise exclude it. When exclude=true, still fill in headline/summary/ \
+   category as best you can — they will not be published, but the field is required.
 10. Rate importance from 1-10: how much this story matters to an internationally-minded, \
    educated reader who wants to understand what actually matters in the world — the kind \
    of reader The Economist and the New York Times' front page are written for, not a local \
