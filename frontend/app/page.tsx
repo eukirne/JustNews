@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { CategoryFilter } from "@/components/CategoryFilter";
-import { Hero } from "@/components/Hero";
 import { SiteHeader } from "@/components/SiteHeader";
 import { StoryCard } from "@/components/StoryCard";
 import { StoryModal } from "@/components/StoryModal";
@@ -13,8 +12,6 @@ export default function Home() {
   const [category, setCategory] = useState<string | null>(null);
   const { stories, isLoading, error, lastUpdated } = useStories(category);
   const [openStory, setOpenStory] = useState<Story | null>(null);
-
-  const [hero, ...rest] = stories;
 
   return (
     <div className="min-h-full bg-background">
@@ -38,11 +35,9 @@ export default function Home() {
           <p className="text-sm text-stone-500">No stories yet for this category. Check back after the next refresh.</p>
         )}
 
-        {hero && <Hero story={hero} onOpen={() => setOpenStory(hero)} />}
-
-        {rest.length > 0 && (
+        {stories.length > 0 && (
           <div className="flex flex-col sm:grid sm:grid-cols-2 sm:gap-x-6 sm:gap-y-8 lg:grid-cols-3">
-            {rest.map((story) => (
+            {stories.map((story) => (
               <StoryCard key={story.id} story={story} onOpen={() => setOpenStory(story)} />
             ))}
           </div>
