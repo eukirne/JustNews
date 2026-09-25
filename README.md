@@ -81,22 +81,27 @@ to vibes:
   default front-page listing — it only shows up when its tab is selected
   (`/api/stories?category=Sports`; see `DEFAULT_HIDDEN_CATEGORIES` in
   `api.py`).
-- Stories with no usable image (no feed-supplied one, and no og:image
-  fallback either) are dropped before they'd cost a reframe call
-  (`gather_top_clusters` in `pipeline.py`), and the API additionally
-  excludes any image-less row from `/api/stories` — so an image is
-  guaranteed for everything the site actually shows, whether the story was
-  just published or has been sitting in the database for a while.
-- Close-up/zoomed-in face shots are avoided where a better alternative
-  exists. `choose_best_image` (`backend/app/images.py`) checks every
-  candidate image for the same story (the primary article's and each
-  covering outlet's) with OpenCV's face detector, and picks the first
-  candidate whose largest detected face doesn't dominate the frame. This
-  runs locally (no Claude API call, no added cost) and is a *soft*
-  preference, not a hard filter: if every candidate is a face close-up, the
-  first one is still used rather than losing the story. Requires
-  `opencv-python-headless` — pinned to `4.10.0.84` specifically because
-  `5.0` stopped bundling the Haar cascade model file this depends on.
+- Stories with no usable image are published anyway, text-only — a story
+  is never dropped just for lacking a photo. `choose_best_image`
+  (`backend/app/images.py`) checks every candidate image for a story (the
+  primary article's and each covering outlet's) and applies two filters:
+  - **Close-up/zoomed-in face shots** are a *soft* preference to avoid —
+    OpenCV's face detector picks the first candidate whose largest
+    detected face doesn't dominate the frame, but if every candidate is a
+    face close-up, the best of those is still used rather than losing a
+    real photo over that alone.
+  - **Flat/generic placeholder graphics** (e.g. a generic "BREAKING NEWS"
+    banner some outlets use as a stand-in og:image before a real photo
+    exists) are a *hard* rejection — detected by how much of the image is
+    one dominant color, since real editorial photos have far more color
+    variance. These are never used, even as a last resort: a story down
+    to only this kind of "image" is published text-only instead.
+  Both checks run locally via OpenCV (no Claude API call, no added
+  per-story cost) — `opencv-python-headless` is pinned to `4.10.0.84`
+  specifically because `5.0` stopped bundling the Haar cascade model file
+  the face check depends on. The frontend simply omits the image element
+  entirely when a story has none, rather than showing an empty
+  placeholder box.
 
 ## A note on sources
 

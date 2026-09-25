@@ -132,7 +132,10 @@ async def test_run_pipeline_selects_top_by_importance_not_recency(tmp_path, monk
     assert [s.headline for s in saved] == ["Old-but-important", "Mid"]
 
 
-async def test_gather_top_clusters_drops_stories_with_no_image(monkeypatch):
+async def test_gather_top_clusters_keeps_stories_with_no_image(monkeypatch):
+    # Stories without a usable image are published text-only rather than
+    # culled — this only checks gather_top_clusters keeps every candidate
+    # regardless of what choose_best_image lands on for its image_url.
     clusters = [
         make_cluster("Has image", hours_offset=0, image_url="https://example.com/a.jpg"),
         make_cluster("No image", hours_offset=1, image_url=None),
@@ -146,14 +149,16 @@ async def test_gather_top_clusters_drops_stories_with_no_image(monkeypatch):
         return clusters
 
     async def fake_fill_missing_images(client, articles):
-        # Simulate the og:image fallback failing to find anything for the
-        # one article that has no feed-supplied image — it stays None.
         return None
+
+    async def fake_choose_best_image(client, cluster):
+        return cluster.primary.image_url  # pass-through: no rejection logic under test here
 
     monkeypatch.setattr(pipeline, "fetch_all_feeds", fake_fetch_all_feeds)
     monkeypatch.setattr(pipeline, "cluster_articles", fake_cluster_articles)
     monkeypatch.setattr(pipeline, "fill_missing_images", fake_fill_missing_images)
+    monkeypatch.setattr(pipeline, "choose_best_image", fake_choose_best_image)
 
     result = await pipeline.gather_top_clusters(limit=5)
 
-    assert [c.primary.title for c in result] == ["Has image", "Also has image"]
+    assert [c.primary.title for c in result] == ["Has image", "No image", "Also has image"]

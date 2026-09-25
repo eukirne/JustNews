@@ -115,7 +115,7 @@ def test_sports_hidden_from_default_listing_but_visible_via_filter(tmp_path):
     assert body[0]["headline"] == "Sports story"
 
 
-def test_stories_without_an_image_are_excluded(tmp_path):
+def test_stories_without_an_image_are_still_included(tmp_path):
     app, TestSession = make_app_with_test_db(tmp_path)
 
     session = TestSession()
@@ -150,5 +150,11 @@ def test_stories_without_an_image_are_excluded(tmp_path):
 
     resp = client.get("/api/stories")
     assert resp.status_code == 200
-    headlines = [s["headline"] for s in resp.json()]
-    assert headlines == ["Has an image"]
+    body = resp.json()
+    headlines = {s["headline"] for s in body}
+    # Stories without a usable image are still published (text-only on
+    # the frontend), not excluded — only content-based rules (crime/
+    # personal stories, Sports on the default listing) filter results.
+    assert headlines == {"Has an image", "Has no image"}
+    no_image_story = next(s for s in body if s["headline"] == "Has no image")
+    assert no_image_story["image_url"] is None

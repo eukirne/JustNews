@@ -23,6 +23,14 @@ _face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + "haarcascade_front
 # "hero" photography where a face is naturally much smaller in the frame.
 FACE_AREA_THRESHOLD = 0.10
 
+# If one quantized color covers at least this fraction of an image's
+# pixels, it's treated as a flat graphic/badge (e.g. a generic "BREAKING"
+# banner some outlets use as a placeholder og:image before a real photo
+# exists) rather than an actual photograph. Real editorial photos almost
+# always have far more color variance than this from lighting, shadows,
+# and texture.
+GENERIC_GRAPHIC_DOMINANT_FRACTION = 0.85
+
 # One RobotFileParser per host per pipeline run, so we only fetch
 # robots.txt once per outlet instead of once per article.
 _robots_cache: dict[str, RobotFileParser | None] = {}
@@ -124,21 +132,62 @@ def is_face_dominant(image_bytes: bytes) -> bool:
             return False
 
         largest_face_area = max(w * h for (_, _, w, h) in faces)
-        return (largest_face_area / image_area) >= FACE_AREA_THRESHOLD
+        return bool((largest_face_area / image_area) >= FACE_AREA_THRESHOLD)
     except Exception:
         logger.exception("Face-dominance check failed; treating image as fine to use")
         return False
 
 
+def is_generic_graphic(image_bytes: bytes, dominant_fraction_threshold: float = GENERIC_GRAPHIC_DOMINANT_FRACTION) -> bool:
+    """Best-effort check for a flat, low-complexity graphic (e.g. a generic
+    "BREAKING" banner/badge) rather than an actual photograph.
+
+    Unlike is_face_dominant, this is a hard rejection — see
+    choose_best_image. On any decode failure, returns False (fine to use),
+    the same fail-open behavior as the other image checks here.
+    """
+    try:
+        arr = np.frombuffer(image_bytes, dtype=np.uint8)
+        img = cv2.imdecode(arr, cv2.IMREAD_COLOR)
+        if img is None:
+            return False
+
+        small = cv2.resize(img, (64, 64), interpolation=cv2.INTER_AREA)
+        pixels = small.reshape(-1, 3).astype(np.int16)
+        if len(pixels) == 0:
+            return False
+
+        # Quantize so JPEG compression noise doesn't fragment what is
+        # visually one flat color into many near-identical ones.
+        quantized = (pixels // 16) * 16
+        _colors, counts = np.unique(quantized, axis=0, return_counts=True)
+        dominant_fraction = counts.max() / len(pixels)
+        return bool(dominant_fraction >= dominant_fraction_threshold)
+    except Exception:
+        logger.exception("Generic-graphic check failed; treating image as fine to use")
+        return False
+
+
 async def choose_best_image(client: httpx.AsyncClient, cluster: StoryCluster) -> str | None:
-    """Picks an image for a story, preferring one that isn't a close-up face shot.
+    """Picks an image for a story, or None if nothing usable is available.
 
     A clustered story often has an image from more than one outlet (the
-    primary article's, plus each covering member's). We try each candidate
-    in order and take the first that isn't face-dominant; if every
-    candidate is face-dominant (or fails to download), we still fall back
-    to the first candidate rather than publish no image at all — avoiding
-    faces is explicitly a "when possible" preference, not a requirement.
+    primary article's, plus each covering member's). Each candidate is
+    checked in order:
+
+    - A flat/generic graphic (e.g. a placeholder "BREAKING" banner) is
+      rejected outright and never used, even as a last resort — showing a
+      generic badge instead of a real photo is worse than showing no
+      image at all, so a story down to only this kind of "image" is
+      published as text-only rather than culled or shown a bad picture.
+    - A close-up/zoomed-in face shot is a *soft* preference to avoid: the
+      first non-face-dominant, non-generic candidate wins, but if every
+      surviving candidate is a face close-up, the best of those is used
+      rather than discarding a real photo over that alone.
+
+    Returns None when no candidate survives (no image_url on any article,
+    every fetch failed, or every candidate was a generic graphic) — the
+    story is still published, just without an image.
     """
     settings = get_settings()
     candidates: list[str] = []
@@ -146,8 +195,7 @@ async def choose_best_image(client: httpx.AsyncClient, cluster: StoryCluster) ->
         if article.image_url and article.image_url not in candidates:
             candidates.append(article.image_url)
 
-    if not candidates:
-        return None
+    face_dominant_fallback: str | None = None
 
     for url in candidates:
         try:
@@ -157,7 +205,15 @@ async def choose_best_image(client: httpx.AsyncClient, cluster: StoryCluster) ->
             logger.info("Could not fetch candidate image %s: %s", url, exc)
             continue
 
-        if not is_face_dominant(resp.content):
+        content = resp.content
+        if is_generic_graphic(content):
+            logger.info("Rejecting generic/flat graphic image (e.g. a placeholder banner): %s", url)
+            continue
+
+        if not is_face_dominant(content):
             return url
 
-    return candidates[0]
+        if face_dominant_fallback is None:
+            face_dominant_fallback = url
+
+    return face_dominant_fallback

@@ -144,6 +144,22 @@ STORIES = [
         ],
         published_at=dt.datetime.now(dt.timezone.utc) - dt.timedelta(hours=3),
     ),
+    dict(
+        cluster_key="seed-7",
+        category="Politics",
+        headline="Central bank holds interest rates steady for third straight meeting",
+        original_headline="Rate-setters vote to hold as inflation cools closer to target",
+        summary=(
+            "Policymakers voted to keep the benchmark interest rate unchanged, citing signs that "
+            "inflation is cooling toward target without further tightening. Markets had widely "
+            "expected the decision, and attention now turns to guidance on the timing of a first cut."
+        ),
+        image_url=None,  # deliberately no image — exercises the text-only card layout
+        sources=[
+            {"outlet": "Reuters Top News", "url": "https://example.com/reuters/rates-hold", "title": "Rates held steady"},
+        ],
+        published_at=dt.datetime.now(dt.timezone.utc) - dt.timedelta(hours=1),
+    ),
 ]
 
 

@@ -132,3 +132,67 @@ async def test_choose_best_image_returns_none_with_no_candidates():
         result = await images.choose_best_image(client, cluster)
 
     assert result is None
+
+
+def test_is_generic_graphic_handles_garbage_bytes_gracefully():
+    assert images.is_generic_graphic(b"this is not an image") is False
+
+
+def test_is_generic_graphic_detects_a_flat_color_banner():
+    solid_red = np.zeros((200, 400, 3), dtype=np.uint8)
+    solid_red[:, :] = (0, 0, 200)  # BGR
+    ok, buf = cv2.imencode(".jpg", solid_red, [cv2.IMWRITE_JPEG_QUALITY, 90])
+    assert ok
+    assert images.is_generic_graphic(buf.tobytes()) is True
+
+
+def test_is_generic_graphic_passes_high_variance_photo():
+    noise = np.random.randint(0, 255, (200, 400, 3), dtype=np.uint8)
+    ok, buf = cv2.imencode(".jpg", noise)
+    assert ok
+    assert images.is_generic_graphic(buf.tobytes()) is False
+
+
+@pytest.mark.asyncio
+@respx.mock
+async def test_choose_best_image_rejects_generic_graphic_even_as_sole_candidate(monkeypatch):
+    respx.get("https://cdn.example.com/breaking-banner.jpg").mock(
+        return_value=httpx.Response(200, content=b"banner-bytes")
+    )
+
+    monkeypatch.setattr(images, "is_generic_graphic", lambda data: True)
+    monkeypatch.setattr(images, "is_face_dominant", lambda data: False)
+
+    cluster = StoryCluster(
+        primary=make_article("BBC News", "https://cdn.example.com/breaking-banner.jpg"), members=[]
+    )
+
+    async with httpx.AsyncClient() as client:
+        result = await images.choose_best_image(client, cluster)
+
+    # Unlike face-dominance, this is a hard rejection: no fallback even
+    # when it's the only candidate — the story is published without an
+    # image rather than with a generic placeholder banner.
+    assert result is None
+
+
+@pytest.mark.asyncio
+@respx.mock
+async def test_choose_best_image_prefers_real_photo_over_generic_graphic(monkeypatch):
+    respx.get("https://cdn.example.com/breaking-banner.jpg").mock(
+        return_value=httpx.Response(200, content=b"banner-bytes")
+    )
+    respx.get("https://cdn.example.com/real-photo.jpg").mock(return_value=httpx.Response(200, content=b"photo-bytes"))
+
+    monkeypatch.setattr(images, "is_generic_graphic", lambda data: data == b"banner-bytes")
+    monkeypatch.setattr(images, "is_face_dominant", lambda data: False)
+
+    cluster = StoryCluster(
+        primary=make_article("BBC News", "https://cdn.example.com/breaking-banner.jpg"),
+        members=[make_article("The Guardian", "https://cdn.example.com/real-photo.jpg")],
+    )
+
+    async with httpx.AsyncClient() as client:
+        result = await images.choose_best_image(client, cluster)
+
+    assert result == "https://cdn.example.com/real-photo.jpg"

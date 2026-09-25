@@ -11,7 +11,7 @@ export function StoryCard({ story, onOpen }: { story: Story; onOpen: () => void 
   return (
     <article className="flex flex-col gap-3 border-b border-stone-200 pb-6 sm:border-none sm:pb-0">
       <button type="button" onClick={onOpen} className="flex cursor-pointer flex-col gap-3 text-left">
-        {story.image_url ? (
+        {story.image_url && (
           // eslint-disable-next-line @next/next/no-img-element -- images come from arbitrary outlet domains decided at runtime, unsuitable for next/image's static remotePatterns allowlist
           <img
             src={story.image_url}
@@ -19,8 +19,6 @@ export function StoryCard({ story, onOpen }: { story: Story; onOpen: () => void 
             loading="lazy"
             className="aspect-video w-full rounded-xl object-cover"
           />
-        ) : (
-          <div className="aspect-video w-full rounded-xl bg-stone-100" aria-hidden="true" />
         )}
 
         <div className="flex flex-col gap-1.5">

@@ -10,18 +10,16 @@ export function Hero({ story, onOpen }: { story: Story; onOpen: () => void }) {
 
   return (
     <article className="flex flex-col gap-4 border-b border-stone-200 pb-8">
-      <button type="button" onClick={onOpen} className="cursor-pointer text-left">
-        {story.image_url ? (
-          // eslint-disable-next-line @next/next/no-img-element -- arbitrary outlet-hosted image, see StoryCard
+      {story.image_url && (
+        <button type="button" onClick={onOpen} className="cursor-pointer text-left">
+          {/* eslint-disable-next-line @next/next/no-img-element -- arbitrary outlet-hosted image, see StoryCard */}
           <img
             src={story.image_url}
             alt=""
             className="aspect-[16/10] w-full rounded-xl object-cover sm:aspect-[21/9]"
           />
-        ) : (
-          <div className="aspect-[16/10] w-full rounded-xl bg-stone-100 sm:aspect-[21/9]" aria-hidden="true" />
-        )}
-      </button>
+        </button>
+      )}
 
       <div className="flex flex-col gap-2.5">
         <div className="flex items-center gap-2">

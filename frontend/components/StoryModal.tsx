@@ -34,11 +34,9 @@ export function StoryModal({ story, onClose }: { story: Story; onClose: () => vo
         className="w-full max-w-2xl rounded-lg bg-white shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
-        {story.image_url ? (
+        {story.image_url && (
           // eslint-disable-next-line @next/next/no-img-element -- arbitrary outlet-hosted image, see StoryCard
           <img src={story.image_url} alt="" className="h-56 w-full rounded-t-lg object-cover sm:h-72" />
-        ) : (
-          <div className="h-16 w-full rounded-t-lg bg-stone-100" aria-hidden="true" />
         )}
 
         <div className="flex flex-col gap-3 p-6">
