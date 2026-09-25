@@ -15,7 +15,7 @@ const archivo = Archivo({
 });
 
 export const metadata: Metadata = {
-  title: "The Bright Side",
+  title: "Just News",
   description: "Real news, honestly framed — what's true, what's serious, and what's genuinely being done about it.",
 };
 

@@ -1,4 +1,4 @@
-# The Bright Side
+# Just News
 
 A small, real, auto-updating news site. It pulls real news from public RSS
 feeds, clusters stories that cover the same event across outlets, and asks

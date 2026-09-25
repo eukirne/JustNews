@@ -26,7 +26,7 @@ async def lifespan(app: FastAPI):
     stop_scheduler()
 
 
-app = FastAPI(title="The Bright Side API", lifespan=lifespan)
+app = FastAPI(title="Just News API", lifespan=lifespan)
 
 settings = get_settings()
 app.add_middleware(

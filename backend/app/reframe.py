@@ -12,7 +12,7 @@ logger = logging.getLogger("brightside.reframe")
 
 CATEGORIES = ["World", "UK/Local", "Politics", "Economy", "Science", "Health", "Culture", "Sports"]
 
-SYSTEM_PROMPT = """You are the editorial engine for The Bright Side, a news site that \
+SYSTEM_PROMPT = """You are the editorial engine for Just News, a news site that \
 reports real news honestly while filtering out political bias and doom-mongering / \
 clickbait framing. You reframe wire-style news summaries around what is genuinely \
 true and constructive in them, without ever inventing facts, downplaying real harm, \
