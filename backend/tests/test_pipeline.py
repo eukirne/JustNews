@@ -69,7 +69,9 @@ async def test_run_pipeline_skips_excluded_stories_and_keeps_going(tmp_path, mon
 
     saved = await pipeline.run_pipeline(db, limit=3, reframer=reframer)
 
-    assert [s.headline for s in saved] == ["H1", "H3", "H4"]
+    # All three non-excluded stories fit within limit=3, so all are kept.
+    # Equal (default) importance, so ordered most-recent-first among ties.
+    assert {s.headline for s in saved} == {"H1", "H3", "H4"}
     assert reframer.calls == 4  # one call was "wasted" on the excluded story
 
 
@@ -90,7 +92,11 @@ async def test_run_pipeline_stops_at_reframe_call_budget(tmp_path, monkeypatch):
     assert reframer.calls == 2 * pipeline.MAX_REFRAME_CALLS_MULTIPLIER
 
 
-async def test_run_pipeline_stops_once_limit_reached(tmp_path, monkeypatch):
+async def test_run_pipeline_keeps_reframing_past_limit_up_to_budget(tmp_path, monkeypatch):
+    # 5 candidates, limit=2 -> call budget is limit * MAX_REFRAME_CALLS_MULTIPLIER = 4.
+    # Unlike the old "stop as soon as we have `limit`" behavior, it should
+    # keep reframing up to the budget so importance can be judged across a
+    # wider pool, touching 4 of the 5 clusters (not just 2).
     clusters = [make_cluster(f"Story {i}", hours_offset=i) for i in range(5)]
     patch_clusters(monkeypatch, clusters)
 
@@ -100,8 +106,30 @@ async def test_run_pipeline_stops_once_limit_reached(tmp_path, monkeypatch):
 
     saved = await pipeline.run_pipeline(db, limit=2, reframer=reframer)
 
-    assert len(saved) == 2
-    assert reframer.calls == 2  # never touched the remaining 3 clusters
+    assert reframer.calls == 4
+    # All 4 reframed candidates share the same default importance, so the
+    # two most recent (H3, H2) win the tiebreak.
+    assert [s.headline for s in saved] == ["H3", "H2"]
+
+
+async def test_run_pipeline_selects_top_by_importance_not_recency(tmp_path, monkeypatch):
+    # Oldest story is the most important one — it should still win over
+    # more recent but less important stories, proving selection isn't
+    # just "most recent N" anymore.
+    clusters = [make_cluster(f"Story {i}", hours_offset=i) for i in range(3)]
+    patch_clusters(monkeypatch, clusters)
+
+    responses = [
+        ReframedStory(headline="Old-but-important", summary="S", category="World", exclude=False, importance=9),
+        ReframedStory(headline="Mid", summary="S", category="World", exclude=False, importance=4),
+        ReframedStory(headline="Recent-but-trivial", summary="S", category="World", exclude=False, importance=2),
+    ]
+    reframer = FakeReframer(responses)
+    db = make_db_session(tmp_path)
+
+    saved = await pipeline.run_pipeline(db, limit=2, reframer=reframer)
+
+    assert [s.headline for s in saved] == ["Old-but-important", "Mid"]
 
 
 async def test_gather_top_clusters_drops_stories_with_no_image(monkeypatch):

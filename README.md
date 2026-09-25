@@ -64,6 +64,19 @@ to vibes:
   pipeline oversamples candidate clusters and caps total Claude calls per
   run at `STORIES_PER_REFRESH × 2` (see `pipeline.py`) so a day heavy on
   this kind of story doesn't blow past the usual per-run cost.
+- Stories are selected by editorial importance, not just recency. Claude
+  rates each reframed story 1-10 for how much it matters to an
+  internationally-minded, educated reader — Economist/NYT-front-page
+  priorities: geopolitics, macroeconomics, major policy, science and public
+  health with real reach, over parochial or incremental news — and only
+  the top `STORIES_PER_REFRESH` by importance (ties broken by recency) get
+  published. This means the pipeline no longer stops reframing as soon as
+  it has "enough" — it reframes the whole candidate pool up to the call
+  budget so importance can be judged across it, then discards the
+  lower-ranked stories it already paid to reframe. In practice this means
+  a run now typically uses closer to the full `× 2` call budget rather
+  than sometimes stopping early, so real-world Claude spend should be
+  expected to sit nearer the worst-case estimates than before this change.
 - Sports is a real category with its own feeds, but is hidden from the
   default front-page listing — it only shows up when its tab is selected
   (`/api/stories?category=Sports`; see `DEFAULT_HIDDEN_CATEGORIES` in

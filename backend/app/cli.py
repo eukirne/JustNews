@@ -39,16 +39,38 @@ async def cmd_run(args: argparse.Namespace) -> None:
         limit = args.limit or settings.stories_per_refresh
         clusters = await gather_top_clusters(limit)
         reframer = Reframer()
+        results = []
         for i, cluster in enumerate(clusters, 1):
             try:
                 reframed = await reframer.reframe(cluster)
             except Exception as exc:  # noqa: BLE001
-                print(f"\n[{i}] FAILED to reframe {cluster.primary.title!r}: {exc}")
+                print(f"[{i}] FAILED to reframe {cluster.primary.title!r}: {exc}")
                 continue
-            print(f"\n[{i}] {reframed.category} — {reframed.headline}")
+            results.append((cluster, reframed))
+
+        # Mirror run_pipeline's actual selection: importance first (ties
+        # broken by recency), only the top `limit` non-excluded ones would
+        # really get published — everything else is shown too, so you can
+        # see what got outranked or excluded and judge whether that's right.
+        included = [(c, r) for c, r in results if not r.exclude]
+        excluded = [(c, r) for c, r in results if r.exclude]
+        included.sort(key=lambda pair: (pair[1].importance, pair[0].primary.published_at), reverse=True)
+        published, dropped = included[:limit], included[limit:]
+
+        def _print(cluster, reframed, tag: str) -> None:
+            print(f"\n[{tag}] importance={reframed.importance} {reframed.category} — {reframed.headline}")
             print(f"    {reframed.summary}")
             print(f"    original headline: {cluster.primary.title}")
             print(f"    sources: {', '.join(cluster.outlets)}")
+
+        for cluster, reframed in published:
+            _print(cluster, reframed, "PUBLISH")
+        for cluster, reframed in dropped:
+            _print(cluster, reframed, "outranked")
+        for cluster, reframed in excluded:
+            _print(cluster, reframed, "excluded")
+
+        print(f"\n{len(published)} would publish, {len(dropped)} outranked, {len(excluded)} excluded, out of {len(results)} reframed.")
         return
 
     init_db()
@@ -86,7 +108,7 @@ async def cmd_list(args: argparse.Namespace) -> None:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(prog="brightside", description="The Bright Side pipeline CLI")
+    parser = argparse.ArgumentParser(prog="justnews", description="Just News pipeline CLI")
     parser.add_argument("-v", "--verbose", action="store_true")
     sub = parser.add_subparsers(dest="command", required=True)
 

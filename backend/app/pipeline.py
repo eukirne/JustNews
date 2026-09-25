@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
+from dataclasses import dataclass
 
 import httpx
 from sqlalchemy import select
@@ -14,23 +15,34 @@ from .dedupe import cluster_articles, normalize_title
 from .feeds import fetch_all_feeds
 from .images import choose_best_image, fill_missing_images
 from .models import Story
-from .reframe import Reframer
+from .reframe import ReframedStory, Reframer
 
 logger = logging.getLogger("brightside.pipeline")
 
 MAX_SOURCES_PER_STORY = 3
 
-# We ask Claude to flag personal/individual-focused stories (crime,
-# accidents, human interest, profiles, tributes, ...) for exclusion (see
-# reframe.py rule 9) rather than filtering by keyword, since telling "one
-# person's story" apart from "story of general relevance that happens to
-# involve or quote a named individual" needs real judgment. That means
-# some reframe calls per run are spent on stories we then discard, so we
-# oversample the candidate pool and cap total Claude calls at a multiple of
-# the target story count — bounding worst-case spend per run even on a day
-# where a large share of the news is exactly what we're filtering out.
+# Claude judges two things per candidate on the same reframe call: whether
+# it's a personal/individual-focused story to exclude (reframe.py rule 9),
+# and how editorially important it is (rule 10, 1-10). Both need real
+# judgment rather than a keyword filter — and importance specifically only
+# means something if it's judged across a pool bigger than the target
+# count, otherwise "most important" degenerates back into "most recent",
+# which is the whole behavior this was meant to fix. So the candidate pool
+# is oversampled and reframed up to the call budget below (not stopped
+# early once `limit` is reached), then only the top `limit` by importance
+# are actually published — the rest were still worth reframing to compare
+# against, they just didn't make the cut. Total Claude calls per run are
+# capped at a multiple of the target story count, bounding worst-case
+# spend even on a day heavy with content that gets excluded or outranked.
 POOL_MULTIPLIER = 3
 MAX_REFRAME_CALLS_MULTIPLIER = 2
+
+
+@dataclass
+class Candidate:
+    cluster: StoryCluster
+    key: str
+    reframed: ReframedStory
 
 
 def cluster_key(cluster: StoryCluster) -> str:
@@ -82,18 +94,17 @@ async def run_pipeline(db: Session, limit: int | None = None, reframer: Reframer
     reframer = reframer or Reframer()
 
     clusters = await gather_top_clusters(limit)
-    saved: list[Story] = []
+    candidates: list[Candidate] = []
     reframe_calls_made = 0
 
+    # Reframe every fresh candidate up to the call budget — not just
+    # enough to fill `limit` — so importance can be judged across the
+    # whole pool rather than whichever clusters happened to sort first by
+    # recency. This means a run typically spends closer to the full
+    # budget than the old "stop as soon as we have enough" behavior did.
     for cluster in clusters:
-        if len(saved) >= limit:
-            break
         if reframe_calls_made >= max_reframe_calls:
-            logger.info(
-                "Hit the %d-call reframe budget for this run with only %d stories saved; stopping.",
-                max_reframe_calls,
-                len(saved),
-            )
+            logger.info("Hit the %d-call reframe budget for this run; stopping.", max_reframe_calls)
             break
 
         key = cluster_key(cluster)
@@ -113,15 +124,27 @@ async def run_pipeline(db: Session, limit: int | None = None, reframer: Reframer
             logger.info("Excluding personal/individual-focused story: %s", cluster.primary.title)
             continue
 
+        candidates.append(Candidate(cluster=cluster, key=key, reframed=reframed))
+
+    # Most important first; recency as the tiebreaker among equally
+    # important stories. Only the top `limit` get published — the rest
+    # were still worth reframing to compare against, but lose out.
+    candidates.sort(key=lambda c: (c.reframed.importance, c.cluster.primary.published_at), reverse=True)
+    chosen = candidates[:limit]
+    if len(candidates) > limit:
+        logger.info("Kept top %d of %d eligible stories by importance", limit, len(candidates))
+
+    saved: list[Story] = []
+    for candidate in chosen:
         story = Story(
-            cluster_key=key,
-            category=reframed.category,
-            headline=reframed.headline,
-            original_headline=cluster.primary.title,
-            summary=reframed.summary,
-            image_url=cluster.primary.image_url,
-            sources_json=json.dumps(build_sources(cluster)),
-            published_at=cluster.primary.published_at,
+            cluster_key=candidate.key,
+            category=candidate.reframed.category,
+            headline=candidate.reframed.headline,
+            original_headline=candidate.cluster.primary.title,
+            summary=candidate.reframed.summary,
+            image_url=candidate.cluster.primary.image_url,
+            sources_json=json.dumps(build_sources(candidate.cluster)),
+            published_at=candidate.cluster.primary.published_at,
         )
         db.add(story)
         saved.append(story)

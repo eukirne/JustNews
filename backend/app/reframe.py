@@ -60,6 +60,24 @@ Follow these rules exactly:
    story? When genuinely unsure, only include it if it is clearly the former; otherwise \
    exclude it. When exclude=true, still fill in headline/summary/category as best you \
    can — they will not be published, but the field is required.
+10. Rate importance from 1-10: how much this story matters to an internationally-minded, \
+   educated reader who wants to understand what actually matters in the world — the kind \
+   of reader The Economist and the New York Times' front page are written for, not a local \
+   paper's. Judge by consequence and reach, not novelty or human interest:
+   - 8-10: major geopolitical developments; national elections, leadership changes, or \
+     policy shifts with broad consequences; market- or economy-moving news (central bank \
+     decisions, major economic data, systemic financial events); large-scale conflict, \
+     disaster, or humanitarian developments; significant scientific or technological \
+     breakthroughs; major public health developments affecting large populations.
+   - 4-7: meaningful but narrower in scope or consequence — notable national policy or \
+     corporate news, regional developments with some broader signal, science/health \
+     stories of moderate significance, substantial developments in an ongoing major story.
+   - 1-3: real news that cleared the relevance bar in rule 9 but is narrow, incremental, \
+     or parochial in scope — a minor update with little new substance, a local policy \
+     decision with no broader implications, a niche development.
+   A story being in the UK/Local category does not by itself lower this score — judge the \
+   actual stakes and reach of the story, not its section. When exclude=true, importance \
+   is still required; use your best estimate.
 
 Call the publish_story tool with your result. Do not include any other commentary."""
 
@@ -85,8 +103,14 @@ PUBLISH_STORY_TOOL = {
                 "type": "boolean",
                 "description": "true if this is a personal/individual-focused story (crime, accident, human-interest, profile, tribute, etc.) rather than something of general relevance — see rule 9.",
             },
+            "importance": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 10,
+                "description": "1-10 editorial importance for an internationally-minded, educated reader — see rule 10.",
+            },
         },
-        "required": ["headline", "summary", "category", "exclude"],
+        "required": ["headline", "summary", "category", "exclude", "importance"],
     },
 }
 
@@ -97,6 +121,7 @@ class ReframedStory:
     summary: str
     category: str
     exclude: bool = False
+    importance: int = 5
 
 
 def build_user_message(cluster: StoryCluster) -> str:
@@ -136,11 +161,17 @@ class Reframer:
                 category = data.get("category", "World")
                 if category not in CATEGORIES:
                     category = "World"
+                try:
+                    importance = int(data.get("importance", 5))
+                except (TypeError, ValueError):
+                    importance = 5
+                importance = max(1, min(10, importance))
                 return ReframedStory(
                     headline=data["headline"].strip(),
                     summary=data["summary"].strip(),
                     category=category,
                     exclude=bool(data.get("exclude", False)),
+                    importance=importance,
                 )
 
         raise RuntimeError("Claude response did not include a publish_story tool call")
