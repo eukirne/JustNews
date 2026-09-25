@@ -188,15 +188,28 @@ that rules out pure serverless functions for it.
   schedule) instead of the in-process APScheduler. More moving parts, but
   doable if you want the frontend on Vercel specifically.
 
-Swap `DATABASE_URL` to a `postgresql+psycopg2://...` URL and add
-`psycopg2-binary` to `requirements.txt` to move off SQLite for a real
-deployment.
+`psycopg2-binary` is already in `requirements.txt`, so swapping
+`DATABASE_URL` to a `postgresql+psycopg2://...` URL is the only step
+needed to move off SQLite — no other code changes.
 
 ### Deploying to Render (step-by-step)
 
 Both Dockerfiles already read the `$PORT` Render assigns, so no extra
-config is needed beyond environment variables. Create **two** web
-services from the same GitHub repo:
+config is needed beyond environment variables.
+
+**0. Set up a free Postgres database — do this first**
+
+SQLite on a Render web service's own disk does **not** survive a
+restart (a deploy, or the container sleeping/recycling) unless you pay
+for Render's Starter plan + a persistent Disk. A free external Postgres
+avoids that entirely and costs nothing:
+
+- Sign up free at [neon.tech](https://neon.tech) (or Supabase) and
+  create a project. Copy the connection string it gives you.
+- Rewrite it into SQLAlchemy's psycopg2-dialect form: it'll typically
+  start with `postgresql://` — add `+psycopg2` right after `postgresql`,
+  e.g. `postgresql+psycopg2://user:password@host/dbname?sslmode=require`.
+- Keep this handy — it's the `DATABASE_URL` value for step 1.
 
 **1. Backend**
 
@@ -204,20 +217,18 @@ services from the same GitHub repo:
 - Root Directory: `backend`. Runtime: Docker (auto-detected from
   `backend/Dockerfile`).
 - Health Check Path: `/health`.
-- Plan: pick **Starter** (not Free) and attach a **Disk** (1 GB is plenty,
-  mount path `/data`). This matters: Render's free web services sleep
-  after 15 minutes of inactivity (which kills the in-process scheduler)
-  and don't support persistent disks at all, so on Free your SQLite data
-  — and the "auto-updating every 30-60 min" behavior — won't actually
-  persist or run continuously. Starter is a few dollars a month and fixes
-  both.
+- Plan: **Free is fine now** that stories persist in Postgres rather
+  than on the container's own disk — no Disk needed, no Starter plan
+  required. (Free services still sleep after 15 min idle, which pauses
+  the in-process scheduler until something wakes it — see the keep-alive
+  step below to make the refresh schedule actually reliable.)
 - Environment variables:
   - `ANTHROPIC_API_KEY` — your key from console.anthropic.com (get one at
     https://console.anthropic.com/settings/keys if you don't have it yet
     — you can deploy without it, the pipeline just won't produce any
     stories until it's set).
   - `CLAUDE_MODEL` — `claude-sonnet-5` (or leave unset to use that default).
-  - `DATABASE_URL` — `sqlite:////data/brightside.db`.
+  - `DATABASE_URL` — the Postgres connection string from step 0.
   - `STORIES_PER_REFRESH` — `15`.
   - `REFRESH_INTERVAL_MINUTES` — `45`.
   - `CORS_ORIGINS` — leave as `http://localhost:3000` for now; you'll
@@ -228,8 +239,7 @@ services from the same GitHub repo:
 
 - New → Web Service → same repo, Root Directory: `frontend`, Docker
   runtime (from `frontend/Dockerfile`).
-- Plan: Free is fine here — it can cold-start on a visit without losing
-  any data, unlike the backend.
+- Plan: Free.
 - Environment variables:
   - `NEXT_PUBLIC_API_URL` — the backend URL from step 1. This is read at
     **build time** (it's baked into the client bundle), so if you change
@@ -245,6 +255,21 @@ services from the same GitHub repo:
   scheduled pipeline run completes (up to `REFRESH_INTERVAL_MINUTES`
   after the backend's first boot, which also kicks one off immediately
   at startup).
+
+**4. Keep the backend awake (recommended on Free)**
+
+Without this, the backend sleeps after 15 min idle and the in-process
+scheduler stops with it — it only catches up when a visitor happens to
+hit the site after enough time has passed, rather than running on its
+`REFRESH_INTERVAL_MINUTES` schedule.
+
+- Sign up free at [cron-job.org](https://cron-job.org) (or UptimeRobot).
+- Create a job hitting `<your backend URL>/health` every 10 minutes.
+- This keeps the backend continuously awake so the scheduler actually
+  fires on time — with Postgres handling persistence, this combination
+  (Free backend + Free frontend + free Postgres + free pinger) is a
+  fully working $0-hosting setup; the only recurring cost is Claude API
+  usage itself.
 
 ## Frontend features
 
