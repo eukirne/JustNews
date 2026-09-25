@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { Story } from "@/lib/api";
 import { useOriginalHeadline } from "@/lib/OriginalHeadlineContext";
 import { CategoryTag } from "./CategoryTag";
+import { Timestamp } from "./Timestamp";
 
 export function StoryModal({ story, onClose }: { story: Story; onClose: () => void }) {
   const { show } = useOriginalHeadline();
@@ -42,7 +43,11 @@ export function StoryModal({ story, onClose }: { story: Story; onClose: () => vo
 
         <div className="flex flex-col gap-3 p-6">
           <div className="flex items-start justify-between gap-4">
-            <CategoryTag category={story.category} />
+            <div className="flex items-center gap-2">
+              <CategoryTag category={story.category} />
+              <span className="text-stone-300">·</span>
+              <Timestamp publishedAt={story.published_at} className="text-xs font-medium text-stone-500" />
+            </div>
             <button
               type="button"
               onClick={onClose}
@@ -56,7 +61,7 @@ export function StoryModal({ story, onClose }: { story: Story; onClose: () => vo
             </button>
           </div>
 
-          <h2 className="font-serif text-2xl font-bold leading-tight text-stone-900">{story.headline}</h2>
+          <h2 className="font-display text-2xl font-black leading-[1.1] tracking-tight text-foreground">{story.headline}</h2>
 
           {show && (
             <p className="text-sm italic text-stone-500">Original headline: “{story.original_headline}”</p>
@@ -73,7 +78,7 @@ export function StoryModal({ story, onClose }: { story: Story; onClose: () => vo
                   href={source.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-sm font-medium text-blue-800 hover:underline"
+                  className="text-sm font-bold text-accent-dark hover:underline"
                 >
                   {source.outlet} →
                 </a>

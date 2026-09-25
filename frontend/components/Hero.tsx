@@ -2,46 +2,54 @@ import { Story } from "@/lib/api";
 import { useOriginalHeadline } from "@/lib/OriginalHeadlineContext";
 import { CategoryTag } from "./CategoryTag";
 import { SourceAttribution } from "./SourceAttribution";
+import { Timestamp } from "./Timestamp";
 
 export function Hero({ story, onOpen }: { story: Story; onOpen: () => void }) {
   const { show } = useOriginalHeadline();
   const readOriginalUrl = story.sources[0]?.url;
 
   return (
-    <article className="grid grid-cols-1 gap-6 border-b border-stone-200 pb-8 md:grid-cols-2 md:gap-10">
+    <article className="flex flex-col gap-4 border-b border-stone-200 pb-8">
       <button type="button" onClick={onOpen} className="cursor-pointer text-left">
         {story.image_url ? (
           // eslint-disable-next-line @next/next/no-img-element -- arbitrary outlet-hosted image, see StoryCard
           <img
             src={story.image_url}
             alt=""
-            className="h-64 w-full rounded-lg object-cover md:h-full"
+            className="aspect-[16/10] w-full rounded-xl object-cover sm:aspect-[21/9]"
           />
         ) : (
-          <div className="h-64 w-full rounded-lg bg-stone-100 md:h-full" aria-hidden="true" />
+          <div className="aspect-[16/10] w-full rounded-xl bg-stone-100 sm:aspect-[21/9]" aria-hidden="true" />
         )}
       </button>
 
-      <div className="flex flex-col justify-center gap-3">
-        <CategoryTag category={story.category} />
+      <div className="flex flex-col gap-2.5">
+        <div className="flex items-center gap-2">
+          <CategoryTag category={story.category} />
+          <span className="text-stone-300">·</span>
+          <Timestamp publishedAt={story.published_at} className="text-xs font-medium text-stone-500" />
+        </div>
+
         <button type="button" onClick={onOpen} className="cursor-pointer text-left">
-          <h1 className="font-serif text-3xl font-bold leading-tight text-stone-900 md:text-4xl">{story.headline}</h1>
+          <h1 className="font-display text-3xl font-black leading-[1.05] tracking-tight text-foreground sm:text-4xl md:text-5xl">
+            {story.headline}
+          </h1>
         </button>
 
         {show && (
           <p className="text-sm italic text-stone-500">Original headline: “{story.original_headline}”</p>
         )}
 
-        <p className="text-base leading-relaxed text-stone-700">{story.summary}</p>
+        <p className="max-w-2xl text-base leading-relaxed text-stone-700">{story.summary}</p>
 
-        <div className="flex flex-col gap-2 pt-2">
+        <div className="flex flex-col gap-2 pt-1">
           <SourceAttribution sources={story.sources} />
           {readOriginalUrl && (
             <a
               href={readOriginalUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-sm font-medium text-blue-800 hover:underline"
+              className="text-sm font-bold text-accent-dark hover:underline"
             >
               Read the original →
             </a>

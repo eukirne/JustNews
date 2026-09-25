@@ -7,15 +7,32 @@ UI without an API key or network access. Run with:
 """
 from __future__ import annotations
 
+import base64
 import datetime as dt
 import json
 import sys
 from pathlib import Path
 
+import cv2
+import numpy as np
+
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from app.db import SessionLocal, init_db
 from app.models import Story
+
+
+def _placeholder_image(rgb: tuple[int, int, int]) -> str:
+    """A solid-color data: URI image — real stories always have a real
+    https:// image URL from a feed, but a data URI renders reliably here
+    with no network dependency, which is what local/offline testing needs."""
+    r, g, b = rgb
+    img = np.zeros((360, 640, 3), dtype=np.uint8)
+    img[:, :] = (b, g, r)  # cv2 is BGR
+    ok, buf = cv2.imencode(".jpg", img, [cv2.IMWRITE_JPEG_QUALITY, 60])
+    assert ok
+    return "data:image/jpeg;base64," + base64.b64encode(buf.tobytes()).decode()
+
 
 STORIES = [
     dict(
@@ -30,7 +47,7 @@ STORIES = [
             "that caused last year's damage, and residents in the worst-hit streets have already "
             "moved back into repaired homes."
         ),
-        image_url=None,
+        image_url=_placeholder_image((37, 99, 235)),
         sources=[
             {"outlet": "BBC News", "url": "https://example.com/bbc/flood-barrier", "title": "City finishes flood barrier"},
             {"outlet": "The Guardian UK", "url": "https://example.com/guardian/flood-barrier", "title": "Flood defences completed early"},
@@ -49,7 +66,7 @@ STORIES = [
             "supplies, though humanitarian groups say the amount reaching civilians is still far "
             "short of what is needed."
         ),
-        image_url=None,
+        image_url=_placeholder_image((37, 99, 235)),
         sources=[
             {"outlet": "Reuters Top News", "url": "https://example.com/reuters/ceasefire", "title": "Ceasefire allows aid convoys"},
             {"outlet": "AP Top News", "url": "https://example.com/ap/ceasefire", "title": "Aid reaches besieged region"},
@@ -69,7 +86,7 @@ STORIES = [
             "approved for wider use, and that antibiotic resistance will keep growing without "
             "continued investment in new treatments."
         ),
-        image_url=None,
+        image_url=_placeholder_image((225, 29, 72)),
         sources=[
             {"outlet": "NPR Health", "url": "https://example.com/npr/antibiotic", "title": "New antibiotic trial results"},
         ],
@@ -86,7 +103,7 @@ STORIES = [
             "remained roughly flat, and economists note the improvement has been concentrated in "
             "a handful of regions, with some rural areas still seeing job losses."
         ),
-        image_url=None,
+        image_url=_placeholder_image((217, 119, 6)),
         sources=[
             {"outlet": "The Guardian Business", "url": "https://example.com/guardian/jobs", "title": "Unemployment falls"},
             {"outlet": "NPR News", "url": "https://example.com/npr/jobs", "title": "Jobless rate at two-year low"},
@@ -104,7 +121,7 @@ STORIES = [
             "hot to support life as we know it, but researchers say the detection method could "
             "help identify potentially habitable worlds in future surveys."
         ),
-        image_url=None,
+        image_url=_placeholder_image((5, 150, 105)),
         sources=[
             {"outlet": "BBC News Science", "url": "https://example.com/bbc/exoplanet", "title": "Water vapour found on exoplanet"},
         ],
@@ -120,7 +137,7 @@ STORIES = [
             "title in three decades, finishing four points clear after a run of 12 wins in its "
             "final 14 matches. The squad was assembled on one of the division's smallest budgets."
         ),
-        image_url=None,
+        image_url=_placeholder_image((13, 148, 136)),
         sources=[
             {"outlet": "BBC Sport", "url": "https://example.com/bbc/title-win", "title": "Historic title win"},
             {"outlet": "The Guardian Sport", "url": "https://example.com/guardian/title-win", "title": "Underdogs champions"},

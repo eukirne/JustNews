@@ -17,14 +17,15 @@ export default function Home() {
   const [hero, ...rest] = stories;
 
   return (
-    <div className="min-h-full bg-stone-50">
-      <SiteHeader lastUpdated={lastUpdated} />
-
-      <main className="mx-auto flex max-w-6xl flex-col gap-8 px-4 py-8">
+    <div className="min-h-full bg-background">
+      <div className="sticky top-0 z-30 border-b border-stone-200 bg-white/95 backdrop-blur">
+        <SiteHeader lastUpdated={lastUpdated} />
         <CategoryFilter active={category} onChange={setCategory} />
+      </div>
 
+      <main className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-6 sm:px-6 sm:py-8">
         {error && (
-          <p className="rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+          <p className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
             Couldn&apos;t reach the story feed. Is the API running?
           </p>
         )}
@@ -40,7 +41,7 @@ export default function Home() {
         {hero && <Hero story={hero} onOpen={() => setOpenStory(hero)} />}
 
         {rest.length > 0 && (
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="flex flex-col sm:grid sm:grid-cols-2 sm:gap-x-6 sm:gap-y-8 lg:grid-cols-3">
             {rest.map((story) => (
               <StoryCard key={story.id} story={story} onOpen={() => setOpenStory(story)} />
             ))}

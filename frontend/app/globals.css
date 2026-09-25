@@ -2,14 +2,18 @@
 
 :root {
   --background: #ffffff;
-  --foreground: #171717;
+  --foreground: #0a0a0a;
+  --accent: #ff4713;
+  --accent-dark: #c9350a;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-accent: var(--accent);
+  --color-accent-dark: var(--accent-dark);
   --font-sans: var(--font-sans);
-  --font-serif: var(--font-serif);
+  --font-display: var(--font-display);
 }
 
 body {

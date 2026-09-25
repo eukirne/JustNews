@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Source_Serif_4, Inter } from "next/font/google";
+import { Archivo, Inter } from "next/font/google";
 import { OriginalHeadlineProvider } from "@/lib/OriginalHeadlineContext";
 import "./globals.css";
 
@@ -8,9 +8,10 @@ const inter = Inter({
   subsets: ["latin"],
 });
 
-const sourceSerif = Source_Serif_4({
-  variable: "--font-serif",
+const archivo = Archivo({
+  variable: "--font-display",
   subsets: ["latin"],
+  weight: ["700", "800", "900"],
 });
 
 export const metadata: Metadata = {
@@ -20,7 +21,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={`${inter.variable} ${sourceSerif.variable} h-full antialiased`}>
+    <html lang="en" className={`${inter.variable} ${archivo.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col font-sans">
         <OriginalHeadlineProvider>{children}</OriginalHeadlineProvider>
       </body>
