@@ -12,7 +12,7 @@ from .articles import StoryCluster
 from .config import FEEDS, get_settings
 from .dedupe import cluster_articles, normalize_title
 from .feeds import fetch_all_feeds
-from .images import fill_missing_images
+from .images import choose_best_image, fill_missing_images
 from .models import Story
 from .reframe import Reframer
 
@@ -20,10 +20,11 @@ logger = logging.getLogger("brightside.pipeline")
 
 MAX_SOURCES_PER_STORY = 3
 
-# We ask Claude to flag routine local crime/accident/local-incident stories
-# for exclusion (see reframe.py rule 9) rather than filtering by keyword,
-# since telling "routine local crime" apart from "nationally significant
-# story that happens to involve a crime" needs real judgment. That means
+# We ask Claude to flag personal/individual-focused stories (crime,
+# accidents, human interest, profiles, tributes, ...) for exclusion (see
+# reframe.py rule 9) rather than filtering by keyword, since telling "one
+# person's story" apart from "story of general relevance that happens to
+# involve or quote a named individual" needs real judgment. That means
 # some reframe calls per run are spent on stories we then discard, so we
 # oversample the candidate pool and cap total Claude calls at a multiple of
 # the target story count — bounding worst-case spend per run even on a day
@@ -54,6 +55,13 @@ async def gather_top_clusters(limit: int, pool_multiplier: int = POOL_MULTIPLIER
     settings = get_settings()
     async with httpx.AsyncClient(headers={"User-Agent": settings.fetch_user_agent}) as client:
         await fill_missing_images(client, [c.primary for c in top])
+
+        # Prefer an image that isn't a close-up face shot, checking every
+        # outlet's image for the same event (not just the primary's) —
+        # see choose_best_image's docstring. This mutates the primary's
+        # image_url in place since that's what actually gets stored.
+        for cluster in top:
+            cluster.primary.image_url = await choose_best_image(client, cluster)
 
     # Stories with no image (no feed-supplied one, and no usable og:image
     # either) are dropped before they'd otherwise cost a reframe call —
@@ -102,7 +110,7 @@ async def run_pipeline(db: Session, limit: int | None = None, reframer: Reframer
             continue
 
         if reframed.exclude:
-            logger.info("Excluding routine crime/local-incident story: %s", cluster.primary.title)
+            logger.info("Excluding personal/individual-focused story: %s", cluster.primary.title)
             continue
 
         story = Story(

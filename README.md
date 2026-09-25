@@ -51,17 +51,19 @@ to vibes:
 - Headlines are one-line and factual: no ALL CAPS, no clickbait, no
   manufactured urgency.
 - Every story keeps 2–3 original source links for attribution.
-- Routine local crime, individual accident reports, and other local-incident
-  stories (a single arrest, an inquest into one person's death, a local
-  crash, a tribute/obituary piece) are excluded from publication entirely —
-  Claude flags these via an `exclude` field on the same reframe call rather
-  than a keyword filter, since telling "routine local crime" apart from
-  genuinely significant news that happens to involve a crime (a war-crimes
-  investigation, a major public-interest trial) takes real judgment. Because
-  some reframe calls are "spent" on stories that then get discarded, the
+- Stories centered on one named individual's personal situation — a routine
+  local crime report, an accident, a birthday/anniversary piece, a profile,
+  a tribute/obituary ("a woman in Exeter who...") — are excluded from
+  publication entirely; this site only publishes stories of general
+  relevance. Claude flags these via an `exclude` field on the same reframe
+  call rather than a keyword filter, since telling "this is really just one
+  person's story" apart from genuinely general-interest news that happens
+  to name or quote an individual (a war-crimes investigation, a major
+  public-interest trial, a policy change) takes real judgment. Because some
+  reframe calls are "spent" on stories that then get discarded, the
   pipeline oversamples candidate clusters and caps total Claude calls per
-  run at `STORIES_PER_REFRESH × 2` (see `pipeline.py`) so a crime-heavy news
-  day doesn't blow past the usual per-run cost.
+  run at `STORIES_PER_REFRESH × 2` (see `pipeline.py`) so a day heavy on
+  this kind of story doesn't blow past the usual per-run cost.
 - Sports is a real category with its own feeds, but is hidden from the
   default front-page listing — it only shows up when its tab is selected
   (`/api/stories?category=Sports`; see `DEFAULT_HIDDEN_CATEGORIES` in
@@ -72,6 +74,16 @@ to vibes:
   excludes any image-less row from `/api/stories` — so an image is
   guaranteed for everything the site actually shows, whether the story was
   just published or has been sitting in the database for a while.
+- Close-up/zoomed-in face shots are avoided where a better alternative
+  exists. `choose_best_image` (`backend/app/images.py`) checks every
+  candidate image for the same story (the primary article's and each
+  covering outlet's) with OpenCV's face detector, and picks the first
+  candidate whose largest detected face doesn't dominate the frame. This
+  runs locally (no Claude API call, no added cost) and is a *soft*
+  preference, not a hard filter: if every candidate is a face close-up, the
+  first one is still used rather than losing the story. Requires
+  `opencv-python-headless` — pinned to `4.10.0.84` specifically because
+  `5.0` stopped bundling the Haar cascade model file this depends on.
 
 ## A note on sources
 

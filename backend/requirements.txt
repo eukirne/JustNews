@@ -11,3 +11,9 @@ anthropic==0.34.2
 pydantic==2.9.2
 pydantic-settings==2.5.2
 python-dotenv==1.0.1
+# Pinned to 4.10 — opencv-python-headless 5.0 stopped bundling the Haar
+# cascade XML files this module loads at import time (cv2.data.haarcascades
+# is present but empty); a bare "opencv-python-headless" would silently
+# resolve to a version where face detection can't find its own model file.
+opencv-python-headless==4.10.0.84
+numpy==2.4.6
